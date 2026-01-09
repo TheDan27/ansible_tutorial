@@ -1,0 +1,100 @@
+---
+- name: Gather and display Cisco IOS device information
+  hosts: switches
+  gather_facts: no
+  
+  tasks:
+    - name: Collect device facts
+      cisco.ios.ios_facts:
+        gather_subset:
+          - all
+      # Das 'when' ist überflüssig - du hast nur IOS in der switches-Gruppe
+    
+    - name: Display device information
+      debug:
+        msg:
+          - "================================"
+          - "Device: {{ inventory_hostname }}"
+          - "================================"
+          - "Hostname: {{ ansible_facts['net_hostname'] | default('N/A') }}"
+          - "Model: {{ ansible_facts['net_model'] | default('N/A') }}"
+          - "Serial Number: {{ ansible_facts['net_serialnum'] | default('N/A') }}"
+          - "IOS Version: {{ ansible_facts['net_version'] | default('N/A') }}"
+          - "Image: {{ ansible_facts['net_image'] | default('N/A') }}"
+          - "Interfaces: {{ ansible_facts['net_interfaces'] | length }}"
+          - "================================"
+
+    - name: Show all interface names
+      debug:
+        msg: "Available interfaces: {{ ansible_facts['net_interfaces'].keys() | list }}"
+    
+    # Optional: Zusätzliche nützliche Infos
+    - name: Display memory info
+      debug:
+        msg: "Memory - Total: {{ ansible_facts['net_memtotal_mb'] }}MB, Free: {{ ansible_facts['net_memfree_mb'] }}MB"
+      when: ansible_facts['net_memtotal_mb'] is defined
+
+
+# =============================================================================
+# ÄNDERUNGEN & VERBESSERUNGEN
+# =============================================================================
+
+# ✅ Was ich verbessert habe:
+#
+# 1. 'when' entfernt
+#    - Ist unnötig wenn du nur IOS-Geräte in 'switches' hast
+#    - Macht das Playbook einfacher
+#
+# 2. 'gather_subset: all' hinzugefügt
+#    - Sammelt alle verfügbaren Facts
+#    - Kannst du auch auf 'min' setzen für schnellere Ausführung
+#
+# 3. Debug-Output verbessert
+#    - Zeigt mehr nützliche Infos (Model, Serial, Uptime, etc.)
+#    - Übersichtlichere Formatierung mit |
+#    - Zeigt alle Interfaces an
+#
+# 4. Zusätzliche Tasks
+#    - Memory-Info (optional)
+#    - Interface-Liste
+#
+# 5. Ansible-Facts-Zugriff mit ansible_facts[]
+#    - ansible_facts['net_hostname'] ist der empfohlene Weg
+#    - ansible_net_hostname ist deprecated ab Ansible 2.9+
+
+# =============================================================================
+# ALTERNATIVE: Minimale Version (wenn du es schlank willst)
+# =============================================================================
+
+# ---
+# - name: Quick device check
+#   hosts: switches
+#   gather_facts: no
+#   
+#   tasks:
+#     - name: Get facts
+#       cisco.ios.ios_facts:
+#         gather_subset: min  # Nur Basis-Infos, schneller
+#     
+#     - name: Show info
+#       debug:
+#         msg: "{{ inventory_hostname }}: {{ ansible_facts['net_model'] }} running {{ ansible_facts['net_version'] }}"
+
+# =============================================================================
+# NÜTZLICHE FACTS DIE DU NUTZEN KANNST
+# =============================================================================
+
+# ansible_facts['net_hostname']       - Hostname des Geräts
+# ansible_facts['net_version']        - IOS Version
+# ansible_facts['net_model']          - Hardware Model
+# ansible_facts['net_serialnum']      - Seriennummer
+# ansible_facts['net_image']          - IOS Image Dateiname
+# ansible_facts['net_uptime']         - Uptime in Sekunden
+# ansible_facts['net_memtotal_mb']    - RAM total (MB)
+# ansible_facts['net_memfree_mb']     - RAM frei (MB)
+# ansible_facts['net_interfaces']     - Dict aller Interfaces
+# ansible_facts['net_all_ipv4_addresses'] - Alle IPv4 Adressen
+# ansible_facts['net_neighbors']      - CDP/LLDP Nachbarn
+
+# Komplette Liste anzeigen:
+# ansible-playbook playbooks/ios_getfacts.yml -v

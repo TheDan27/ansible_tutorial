@@ -1,0 +1,33 @@
+- name: Backup Cisco IOS switch configuration
+  hosts: switches
+  gather_facts: no
+  connection: network_cli
+
+  vars:
+    backup_timestamp: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
+
+  tasks:
+    - name: Ensure local backup directory exists
+      local_action:
+        module: file
+        path: /home/danilo/ansible_tutorial/backups
+        state: directory
+        mode: '0755'
+
+    - name: Get running configuration and store temporary backup on controller
+      cisco.ios.ios_config:
+        backup: yes
+      register: backup_result
+
+    - name: Copy backup file to final local backup directory with timestamp
+      copy:
+        src: "{{ backup_result.backup_path }}"
+        dest: "/home/danilo/ansible_tutorial/backups/{{ inventory_hostname }}_{{ backup_timestamp }}.cfg"
+        force: yes
+      delegate_to: localhost
+
+    - name: Remove temporary backup folder created by ios_config
+      file:
+        path: "{{ backup_result.backup_path | dirname }}"
+        state: absent
+      delegate_to: localhost
