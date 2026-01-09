@@ -4,7 +4,7 @@
   connection: network_cli
 
   vars:
-    backup_date: "{{ lookup('pipe', 'date +%Y-%m-%d') }}"
+    backup_timestamp: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
 
   tasks:
     - name: Ensure local backup directory exists
@@ -19,10 +19,11 @@
         backup: yes
       register: backup_result
 
-    - name: Copy backup file to final local backup directory with date
+    - name: Copy backup file to final local backup directory with timestamp
       copy:
         src: "{{ backup_result.backup_path }}"
-        dest: "/home/danilo/ansible_tutorial/backups/{{ inventory_hostname }}_{{ backup_date }}.cfg"
+        dest: "/home/danilo/ansible_tutorial/backups/{{ inventory_hostname }}_{{ backup_timestamp }}.cfg"
+        force: yes
       delegate_to: localhost
 
     - name: Remove temporary backup folder created by ios_config
